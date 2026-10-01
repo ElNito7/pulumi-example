@@ -30,7 +30,8 @@ index_html = storage.Blob(
     resource_group_name=resource_group.name,
     account_name=account.name,
     container_name=static_website.container_name,
-    source=pulumi.StringAsset("<h1>Hola desde Pulumi</h1><h3>Pumpimpumpampam</h3>"),
+    blob_name="index.html",
+    source=pulumi.FileAsset("./pulumi.html"),
     content_type="text/html",
 )
 

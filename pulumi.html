@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pulumi: infrastructure as code in real programming languages</title>
+  <meta name="description" content="A short introduction to Pulumi: what it is, how it works, and how to deploy your first stack.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,650&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --paper: #ECEEF7;
+      --paper-raised: #F8F9FD;
+      --ink: #1B1640;
+      --ink-soft: #524C7A;
+      --violet: #5B3FD6;
+      --panel: #221B52;
+      --panel-line: #3A3179;
+      --panel-text: #DCD8F5;
+      --create: #7BE0A6;
+      --amber: #F2B950;
+      --rule: #CDD0E3;
+
+      --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+      --body: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+      --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--body);
+      font-size: 1.0625rem;
+      line-height: 1.6;
+    }
+
+    a { color: var(--violet); text-underline-offset: 0.18em; }
+    a:hover { color: var(--ink); }
+    :focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; border-radius: 2px; }
+
+    .wrap { max-width: 70rem; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* Header */
+    .site-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.5rem 2rem;
+      padding-top: 1.5rem;
+      padding-bottom: 1.5rem;
+    }
+    .site-name {
+      font-family: var(--display);
+      font-weight: 650;
+      font-size: 1.25rem;
+      color: var(--ink);
+      text-decoration: none;
+    }
+    .site-nav { display: flex; flex-wrap: wrap; gap: 0.25rem 1.5rem; }
+    .site-nav a { color: var(--ink-soft); text-decoration: none; font-weight: 500; }
+    .site-nav a:hover { color: var(--violet); text-decoration: underline; }
+
+    /* Hero */
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+      gap: 3.5rem;
+      align-items: center;
+      padding-top: 3rem;
+      padding-bottom: 5rem;
+    }
+    .hero h1 {
+      font-family: var(--display);
+      font-weight: 650;
+      font-size: clamp(2.5rem, 5.2vw, 4.25rem);
+      line-height: 1.02;
+      letter-spacing: -0.025em;
+      margin: 0 0 1.5rem;
+    }
+    .hero p { color: var(--ink-soft); font-size: 1.1875rem; max-width: 32rem; margin: 0 0 2rem; }
+    .button {
+      display: inline-block;
+      background: var(--violet);
+      color: #fff;
+      font-weight: 600;
+      text-decoration: none;
+      padding: 0.8rem 1.4rem;
+      border-radius: 0.5rem;
+    }
+    .button:hover { background: var(--ink); color: #fff; }
+
+    /* Code panels */
+    .panel {
+      background: var(--panel);
+      color: var(--panel-text);
+      border-radius: 0.75rem;
+      overflow: hidden;
+    }
+    .panel-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.5rem 0.5rem 0;
+      border-bottom: 1px solid var(--panel-line);
+    }
+    .tab {
+      font: 500 0.875rem var(--body);
+      color: #A9A2DB;
+      background: none;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      padding: 0.5rem 0.9rem 0.6rem;
+      cursor: pointer;
+    }
+    .tab:hover { color: #fff; }
+    .tab[aria-selected="true"] { color: #fff; border-bottom-color: var(--amber); }
+    .panel-title {
+      font: 500 0.875rem var(--body);
+      color: #A9A2DB;
+      padding: 0.5rem 0.9rem 0.6rem;
+    }
+    pre {
+      margin: 0;
+      padding: 1.25rem 1.4rem 1.4rem;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 0.875rem;
+      line-height: 1.65;
+      tab-size: 2;
+    }
+    code { font-family: var(--mono); }
+    .k { color: #B9A5FF; }
+    .s { color: var(--amber); }
+    .c { color: #8C85BF; }
+    .add { color: var(--create); }
+
+    .flow {
+      width: 2px;
+      height: 1.75rem;
+      margin-left: 2.25rem;
+      background: var(--violet);
+    }
+
+    /* Sections */
+    .section { padding-top: 4rem; padding-bottom: 4rem; border-top: 1px solid var(--rule); }
+    .section h2 {
+      font-family: var(--display);
+      font-weight: 650;
+      font-size: clamp(1.75rem, 3vw, 2.375rem);
+      line-height: 1.1;
+      letter-spacing: -0.015em;
+      margin: 0 0 0.75rem;
+    }
+    .section .lede { color: var(--ink-soft); max-width: 40rem; margin: 0 0 2.5rem; }
+    p code, dd code, td code, li code {
+      font-size: 0.9em;
+      background: #DDDFF0;
+      padding: 0.1em 0.35em;
+      border-radius: 0.25rem;
+    }
+
+    /* Steps: a real sequence, so it is numbered */
+    .steps {
+      list-style: none;
+      counter-reset: step;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 2rem;
+    }
+    .steps li { counter-increment: step; border-top: 3px solid var(--violet); padding-top: 1rem; }
+    .steps li::before {
+      content: counter(step);
+      display: block;
+      font-family: var(--display);
+      font-weight: 650;
+      font-size: 2rem;
+      line-height: 1;
+      color: var(--violet);
+      margin-bottom: 0.75rem;
+    }
+    .steps h3 { font-size: 1.0625rem; font-weight: 600; margin: 0 0 0.35rem; }
+    .steps p { margin: 0; color: var(--ink-soft); font-size: 1rem; }
+
+    /* Concepts */
+    .concepts {
+      margin: 0;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 4rem;
+    }
+    .concepts div { padding: 1.25rem 0; border-top: 1px solid var(--rule); }
+    .concepts dt { font-family: var(--display); font-weight: 650; font-size: 1.25rem; }
+    .concepts dd { margin: 0.25rem 0 0; color: var(--ink-soft); max-width: 30rem; }
+
+    /* Table */
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; min-width: 34rem; border-collapse: collapse; background: var(--paper-raised); border-radius: 0.75rem; overflow: hidden; }
+    th, td { text-align: left; vertical-align: top; padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--rule); }
+    thead th { font-weight: 600; background: #DFE1F1; }
+    tbody th { font-weight: 600; width: 24%; }
+    tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+    td { color: var(--ink-soft); }
+
+    /* Get started */
+    .start { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 6fr); gap: 3rem; align-items: start; }
+    .start .lede { margin-bottom: 1rem; }
+
+    .site-footer { border-top: 1px solid var(--rule); padding-top: 2rem; padding-bottom: 3rem; color: var(--ink-soft); font-size: 0.9375rem; }
+    .site-footer p { margin: 0; max-width: 44rem; }
+
+    @media (max-width: 56rem) {
+      .hero { grid-template-columns: minmax(0, 1fr); gap: 2.5rem; padding-top: 1.5rem; padding-bottom: 3.5rem; }
+      .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .start { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    }
+    @media (max-width: 36rem) {
+      .steps, .concepts { grid-template-columns: minmax(0, 1fr); }
+      .section { padding-top: 3rem; padding-bottom: 3rem; }
+      pre { font-size: 0.8125rem; padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="wrap site-header">
+    <a class="site-name" href="#top">Pulumi, briefly</a>
+    <nav class="site-nav" aria-label="Sections">
+      <a href="#how">How it works</a>
+      <a href="#concepts">Concepts</a>
+      <a href="#compare">Comparison</a>
+      <a href="#start">Get started</a>
+    </nav>
+  </header>
+
+  <main id="top">
+
+    <section class="wrap hero">
+      <div>
+        <h1>Cloud infrastructure, written as ordinary code</h1>
+        <p>Pulumi is an open source infrastructure as code tool. You describe servers, buckets, and networks in TypeScript, Python, Go, C#, or Java, and Pulumi works out what to create, change, or delete.</p>
+        <a class="button" href="#start">Deploy your first stack</a>
+      </div>
+
+      <div>
+        <div class="panel">
+          <div class="panel-bar" role="tablist" aria-label="Program language">
+            <button class="tab" role="tab" id="tab-ts" aria-controls="code-ts" aria-selected="true">index.ts</button>
+            <button class="tab" role="tab" id="tab-py" aria-controls="code-py" aria-selected="false" tabindex="-1">__main__.py</button>
+          </div>
+<pre id="code-ts" role="tabpanel" aria-labelledby="tab-ts" tabindex="0"><code><span class="k">import</span> * <span class="k">as</span> aws <span class="k">from</span> <span class="s">"@pulumi/aws"</span>;
+
+<span class="c">// One S3 bucket, declared like any other object</span>
+<span class="k">const</span> bucket = <span class="k">new</span> aws.s3.Bucket(<span class="s">"site-assets"</span>, {
+  tags: { team: <span class="s">"web"</span> },
+});
+
+<span class="k">export const</span> bucketName = bucket.id;</code></pre>
+<pre id="code-py" role="tabpanel" aria-labelledby="tab-py" tabindex="0" hidden><code><span class="k">import</span> pulumi
+<span class="k">import</span> pulumi_aws <span class="k">as</span> aws
+
+<span class="c"># One S3 bucket, declared like any other object</span>
+bucket = aws.s3.Bucket(<span class="s">"site-assets"</span>,
+    tags={<span class="s">"team"</span>: <span class="s">"web"</span>})
+
+pulumi.export(<span class="s">"bucket_name"</span>, bucket.id)</code></pre>
+        </div>
+
+        <div class="flow" aria-hidden="true"></div>
+
+        <div class="panel">
+          <div class="panel-bar"><span class="panel-title">What Pulumi plans to do</span></div>
+<pre><code>$ pulumi up
+Previewing update (dev)
+
+     Type                 Name          Plan
+ <span class="add">+</span>   pulumi:pulumi:Stack  site-dev      <span class="add">create</span>
+ <span class="add">+</span>   └─ aws:s3:Bucket     site-assets   <span class="add">create</span>
+
+Resources:
+    <span class="add">+ 2 to create</span></code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="how">
+      <div class="wrap">
+        <h2>How a deployment runs</h2>
+        <p class="lede">Your program never calls the cloud directly. It declares the resources you want, and the Pulumi engine compares that against what already exists.</p>
+        <ol class="steps">
+          <li>
+            <h3>Write the program</h3>
+            <p>Declare resources as objects. Use loops, functions, and packages wherever they help.</p>
+          </li>
+          <li>
+            <h3>Preview the change</h3>
+            <p><code>pulumi preview</code> runs the program and shows what would be created, updated, or deleted.</p>
+          </li>
+          <li>
+            <h3>Apply it</h3>
+            <p><code>pulumi up</code> asks for confirmation, then makes the changes through each cloud provider's API.</p>
+          </li>
+          <li>
+            <h3>Record the state</h3>
+            <p>The result is saved to a state backend, so the next run knows exactly what is deployed.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section" id="concepts">
+      <div class="wrap">
+        <h2>The words you will meet first</h2>
+        <p class="lede">Six ideas cover most of what you need to read a Pulumi project.</p>
+        <dl class="concepts">
+          <div>
+            <dt>Project</dt>
+            <dd>A folder with a <code>Pulumi.yaml</code> file and your program. It names the runtime, such as Node.js or Python.</dd>
+          </div>
+          <div>
+            <dt>Stack</dt>
+            <dd>One deployed copy of a project. Teams usually keep a stack per environment: <code>dev</code>, <code>staging</code>, <code>prod</code>.</dd>
+          </div>
+          <div>
+            <dt>Resource</dt>
+            <dd>A single piece of infrastructure, such as a bucket, a database, or a DNS record.</dd>
+          </div>
+          <div>
+            <dt>Provider</dt>
+            <dd>A plugin that knows how to talk to one platform. There are providers for AWS, Azure, Google Cloud, Kubernetes, and many more.</dd>
+          </div>
+          <div>
+            <dt>State</dt>
+            <dd>Pulumi's record of what each stack has deployed. Store it in Pulumi Cloud or in your own bucket or local disk.</dd>
+          </div>
+          <div>
+            <dt>Config and secrets</dt>
+            <dd>Per-stack settings set with <code>pulumi config set</code>. Add <code>--secret</code> and the value is stored encrypted.</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="section" id="compare">
+      <div class="wrap">
+        <h2>Compared with template-based tools</h2>
+        <p class="lede">Tools built on YAML, JSON, or a dedicated configuration language solve the same problem. The difference is mostly in how you express the infrastructure.</p>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col"></th>
+                <th scope="col">Pulumi</th>
+                <th scope="col">Templates and configuration languages</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Language</th>
+                <td>General-purpose languages your team already writes</td>
+                <td>A format or language specific to the tool</td>
+              </tr>
+              <tr>
+                <th scope="row">Logic and reuse</th>
+                <td>Loops, conditionals, functions, classes, and published packages</td>
+                <td>Built-in constructs and the tool's own module system</td>
+              </tr>
+              <tr>
+                <th scope="row">Testing</th>
+                <td>The unit test framework of the language you chose</td>
+                <td>Tool-specific test and validation commands</td>
+              </tr>
+              <tr>
+                <th scope="row">Learning curve</th>
+                <td>Easier for developers, steeper for people who don't program</td>
+                <td>A smaller surface to learn, with less room to abstract</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="start">
+      <div class="wrap start">
+        <div>
+          <h2>Deploy your first stack</h2>
+          <p class="lede">You need the Pulumi CLI, a language runtime, and credentials for a cloud account. This example uses AWS and TypeScript.</p>
+          <p><a href="https://www.pulumi.com/docs/">Read the official Pulumi documentation</a></p>
+        </div>
+        <div class="panel">
+          <div class="panel-bar"><span class="panel-title">Terminal</span></div>
+<pre><code><span class="c"># Install the CLI (macOS and Linux)</span>
+curl -fsSL https://get.pulumi.com | sh
+
+<span class="c"># Create a project from a template</span>
+mkdir site &amp;&amp; cd site
+pulumi new aws-typescript
+
+<span class="c"># Preview and deploy</span>
+pulumi up
+
+<span class="c"># Remove everything when you are done</span>
+pulumi destroy</code></pre>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>This is an independent overview and is not affiliated with Pulumi Corporation. Pulumi is a trademark of its owner.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Language tabs in the hero
+    const tabs = document.querySelectorAll('[role="tab"]');
+
+    function selectTab(tab) {
+      tabs.forEach(function (t) {
+        const active = t === tab;
+        t.setAttribute('aria-selected', active);
+        t.tabIndex = active ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !active;
+      });
+    }
+
+    tabs.forEach(function (tab, i) {
+      tab.addEventListener('click', function () { selectTab(tab); });
+      tab.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+        next.focus();
+        selectTab(next);
+      });
+    });
+  </script>
+</body>
+</html>
